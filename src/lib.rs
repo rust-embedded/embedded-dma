@@ -12,7 +12,7 @@
 //! our case). This is to allow types like `Vec`, this restriction doesn't apply to `Self::Target`.
 //!
 //! * The location is only guaranteed to be stable for the duration of `Self`, that means that
-//! `Self` doesn't need to be `'static`, i.e. `&'a &[u8]` is valid. This can be a bit subtle for
+//! `Self` doesn't need to be `'static`, i.e. `&'a [u8]` is valid. This can be a bit subtle for
 //! most DMA abstractions, because they almost always require `'static`, given the intrinsics of
 //! `mem::forget` and the Rust language itself. Those APIs must also bound to `'static` and not only
 //! `WriteBuffer`/`ReadBuffer`. The reason we don't require `'static` in the traits themselves is
@@ -90,7 +90,7 @@ pub unsafe trait WriteBuffer {
     unsafe fn write_buffer(&mut self) -> (*mut Self::Word, usize);
 }
 
-// Blanked implementations for common DMA buffer types.
+// Blanket implementations for common DMA buffer types.
 
 unsafe impl<B, T> ReadBuffer for B
 where
@@ -128,6 +128,7 @@ pub unsafe trait Word {}
 unsafe impl Word for u8 {}
 unsafe impl Word for u16 {}
 unsafe impl Word for u32 {}
+unsafe impl Word for u64 {}
 
 /// Trait for `Deref` targets used by the blanket `DmaReadBuffer` impl.
 ///
@@ -199,7 +200,7 @@ macro_rules! dma_target_array_impls {
 
 #[rustfmt::skip]
 dma_target_array_impls!(
-    0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
+     0,   1,   2,   3,   4,   5,   6,   7,   8,   9,
     10,  11,  12,  13,  14,  15,  16,  17,  18,  19,
     20,  21,  22,  23,  24,  25,  26,  27,  28,  29,
     30,  31,  32,  33,  34,  35,  36,  37,  38,  39,
