@@ -17,6 +17,11 @@ jobs:
         TARGET: [x86_64-unknown-linux-gnu, thumbv6m-none-eabi, thumbv7m-none-eabi]
 
         include:
+          # Test MSRV
+          - rust: 1.37.0
+            TARGET: x86_64-unknown-linux-gnu
+
+
           # Test nightly but don't fail
           - rust: nightly
             experimental: true
