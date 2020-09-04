@@ -126,9 +126,13 @@ where
 pub unsafe trait Word {}
 
 unsafe impl Word for u8 {}
+unsafe impl Word for i8 {}
 unsafe impl Word for u16 {}
+unsafe impl Word for i16 {}
 unsafe impl Word for u32 {}
+unsafe impl Word for i32 {}
 unsafe impl Word for u64 {}
+unsafe impl Word for i64 {}
 
 /// Trait for `Deref` targets used by the blanket `DmaReadBuffer` impl.
 ///
