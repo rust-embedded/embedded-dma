@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-Added Word impls for signed integer types
+### Added
+- Signed integer type `Word` trait implementations
 
 ## v0.1.0 - 2020-08-20
 
