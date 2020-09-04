@@ -4,14 +4,14 @@
 
 This project is developed and maintained by the [HAL team][team].
 
-# [Documentation](https://docs.rs/embedded-dma)
+## [Documentation](https://docs.rs/embedded-dma)
 
-# Minimum Supported Rust Version (MSRV)
+## Minimum Supported Rust Version (MSRV)
 
 This crate is guaranteed to compile on stable Rust 1.37.0 and up. It *might*
 compile with older versions but that may change in any new patch release.
 
-# License
+## License
 
 Licensed under either of
 
@@ -22,13 +22,13 @@ Licensed under either of
 
 at your option.
 
-## Contribution
+### Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
 dual licensed as above, without any additional terms or conditions.
 
-## Code of Conduct
+### Code of Conduct
 
 Contribution to this crate is organized under the terms of the [Rust Code of
 Conduct][CoC], the maintainer of this crate, the [HAL team][team], promises

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+...
+
+## [v0.1.1] - 2020-09-04
+
 ### Added
 - Signed integer type `Word` trait implementations
 
@@ -14,4 +18,5 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[unreleased]: https://github.com/rust-embedded/embedded-dma/compare/v0.1.0...HEAD
+[unreleased]: https://github.com/rust-embedded/embedded-dma/compare/v0.1.1...HEAD
+[v0.1.1]: https://github.com/rust-embedded/embedded-dma/compare/v0.1.0...v0.1.1
