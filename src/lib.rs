@@ -279,7 +279,7 @@ pub unsafe trait StaticReadBuffer: ReadBuffer {
     ///
     /// Once this method has been called, it is unsafe to call any `&mut self`
     /// methods on this object as long as the returned value is in use (by DMA).
-    unsafe fn read_buffer(&self) -> (*const <Self as StaticReadBuffer>::Word, usize);
+    unsafe fn static_read_buffer(&self) -> (*const <Self as StaticReadBuffer>::Word, usize);
 }
 
 /// Trait for buffers that can be given to DMA for writing. This is a more strict version of
@@ -306,21 +306,85 @@ pub unsafe trait StaticWriteBuffer: WriteBuffer {
     /// Once this method has been called, it is unsafe to call any `&mut self`
     /// methods, except for `write_buffer`, on this object as long as the
     /// returned value is in use (by DMA).
-    unsafe fn write_buffer(&mut self) -> (*mut <Self as StaticWriteBuffer>::Word, usize);
+    unsafe fn static_write_buffer(&mut self) -> (*mut <Self as StaticWriteBuffer>::Word, usize);
 }
 
 unsafe impl<B: ReadBuffer + 'static> StaticReadBuffer for B {
     type Word = <Self as ReadBuffer>::Word;
 
-    unsafe fn read_buffer(&self) -> (*const <Self as StaticReadBuffer>::Word, usize) {
-        <Self as ReadBuffer>::read_buffer(self)
+    unsafe fn static_read_buffer(&self) -> (*const <Self as StaticReadBuffer>::Word, usize) {
+        self.read_buffer()
     }
 }
 
 unsafe impl<B: WriteBuffer + 'static> StaticWriteBuffer for B {
     type Word = <Self as WriteBuffer>::Word;
 
-    unsafe fn write_buffer(&mut self) -> (*mut <Self as StaticWriteBuffer>::Word, usize) {
-        <Self as WriteBuffer>::write_buffer(self)
+    unsafe fn static_write_buffer(&mut self) -> (*mut <Self as StaticWriteBuffer>::Word, usize) {
+        self.write_buffer()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use core::any::Any;
+
+    fn api_read<W, B>(buffer: B) -> (*const W, usize)
+    where
+        B: ReadBuffer<Word = W>,
+    {
+        unsafe { buffer.read_buffer() }
+    }
+
+    fn static_api_read<W, B>(buffer: B) -> (*const W, usize)
+    where
+        B: StaticReadBuffer<Word = W>,
+    {
+        unsafe { buffer.static_read_buffer() }
+    }
+
+    fn api_write<W, B>(mut buffer: B) -> (*mut W, usize)
+    where
+        B: WriteBuffer<Word = W>,
+    {
+        unsafe { buffer.write_buffer() }
+    }
+
+    fn static_api_write<W, B>(mut buffer: B) -> (*mut W, usize)
+    where
+        B: StaticWriteBuffer<Word = W>,
+    {
+        unsafe { buffer.static_write_buffer() }
+    }
+
+    #[test]
+    fn read_api() {
+        const SIZE: usize = 128;
+        static BUF: [u8; SIZE] = [0u8; SIZE];
+        let local_buf = [0u8; SIZE];
+
+        let (ptr, size_local) = api_read(&local_buf);
+        assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
+        assert!(size_local == SIZE);
+
+        let (ptr, size_static) = static_api_read(&BUF);
+        assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
+        assert!(size_static == SIZE);
+    }
+
+    #[test]
+    fn write_api() {
+        const SIZE: usize = 128;
+        static mut BUF: [u8; SIZE] = [0u8; SIZE];
+        let mut local_buf = [0u8; SIZE];
+
+        let (ptr, size_local) = api_write(&mut local_buf);
+        assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
+        assert!(size_local == SIZE);
+
+        let (ptr, size_static) = static_api_write(unsafe { &mut BUF });
+        assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
+        assert!(size_static == SIZE);
     }
 }
