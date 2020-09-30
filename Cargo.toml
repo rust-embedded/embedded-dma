@@ -1,6 +1,6 @@
 [package]
 name = "embedded-dma"
-version = "0.1.1"
+version = "0.1.2"
 authors = [
     "Jan Teske <jteske@posteo.net>",
     "Thales Fragoso <thales.fragosoz@gmail.com>"
