@@ -10,7 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        # All generated code should be running on stable now
         rust: [stable]
 
         # The default target we're compiling on and for

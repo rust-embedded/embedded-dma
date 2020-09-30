@@ -20,7 +20,7 @@
 //! that use closures to prevent memory corruption.
 //!
 //! If your API also needs a `'static` bound, prefer the use of [StaticReadBuffer] and
-//! [StaticWriteBuffer], they are a stricter version that requires a `'static` lifetime invariant,
+//! [StaticWriteBuffer]. They are a stricter version that requires a `'static` lifetime invariant,
 //! while also allowing end users to __unsafely__ bypass it.
 //!
 //! If you are not sure which version of the traits you should be bounding to in your DMA
