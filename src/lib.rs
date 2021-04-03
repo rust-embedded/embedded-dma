@@ -284,7 +284,6 @@ mod tests {
         let (ptr, size_local) = api_read(&BUF);
         assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
         assert!(size_local == SIZE);
-
     }
 
     #[test]
