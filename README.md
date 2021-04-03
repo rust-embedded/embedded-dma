@@ -1,3 +1,7 @@
+[![crates.io](https://img.shields.io/crates/d/embedded-dma.svg)](https://crates.io/crates/embedded-dma)
+[![crates.io](https://img.shields.io/crates/v/embedded-dma.svg)](https://crates.io/crates/embedded-dma)
+[![Released API docs](https://docs.rs/embedded-dma/badge.svg)](https://docs.rs/embedded-dma)
+
 # `embedded-dma`
 
 > Traits to aid in the creation of sound DMA abstractions.
