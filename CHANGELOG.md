@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.2.0] - 2021-04-04
+
+- Const generics are used for implementation. MSRV bumped to 1.51
+- `StaticReadBuffer` and `StaticWriteBuffer` are removed. `ReadBuffer` and `WriteBuffer` requare `'static`
+
 ## [v0.1.2] - 2020-09-30
 
 ### Added
@@ -21,6 +26,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[unreleased]: https://github.com/rust-embedded/embedded-dma/compare/v0.1.2...HEAD
+[unreleased]: https://github.com/rust-embedded/embedded-dma/compare/v0.2.0...HEAD
+[v0.2.0]: https://github.com/rust-embedded/embedded-dma/compare/v0.1.2...v0.2.0
 [v0.1.2]: https://github.com/rust-embedded/embedded-dma/compare/v0.1.1...v0.1.2
 [v0.1.1]: https://github.com/rust-embedded/embedded-dma/compare/v0.1.0...v0.1.1

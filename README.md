@@ -1,3 +1,7 @@
+[![crates.io](https://img.shields.io/crates/d/embedded-dma.svg)](https://crates.io/crates/embedded-dma)
+[![crates.io](https://img.shields.io/crates/v/embedded-dma.svg)](https://crates.io/crates/embedded-dma)
+[![Released API docs](https://docs.rs/embedded-dma/badge.svg)](https://docs.rs/embedded-dma)
+
 # `embedded-dma`
 
 > Traits to aid in the creation of sound DMA abstractions.
@@ -8,7 +12,7 @@ This project is developed and maintained by the [HAL team][team].
 
 ## Minimum Supported Rust Version (MSRV)
 
-This crate is guaranteed to compile on stable Rust 1.37.0 and up. It *might*
+This crate is guaranteed to compile on stable Rust 1.51.0 and up. It *might*
 compile with older versions but that may change in any new patch release.
 
 ## License
