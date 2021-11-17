@@ -309,16 +309,24 @@ pub unsafe trait StaticWriteBuffer: WriteBuffer {
     unsafe fn static_write_buffer(&mut self) -> (*mut <Self as StaticWriteBuffer>::Word, usize);
 }
 
-unsafe impl<B: ReadBuffer + 'static> StaticReadBuffer for B {
-    type Word = <Self as ReadBuffer>::Word;
+unsafe impl<B, T> StaticReadBuffer for B
+where
+    B: Deref<Target = T> + StableDeref + 'static,
+    T: ReadTarget + ?Sized,
+{
+    type Word = T::Word;
 
     unsafe fn static_read_buffer(&self) -> (*const <Self as StaticReadBuffer>::Word, usize) {
         self.read_buffer()
     }
 }
 
-unsafe impl<B: WriteBuffer + 'static> StaticWriteBuffer for B {
-    type Word = <Self as WriteBuffer>::Word;
+unsafe impl<B, T> StaticWriteBuffer for B
+where
+    B: DerefMut<Target = T> + StableDeref + 'static,
+    T: WriteTarget + ?Sized,
+{
+    type Word = T::Word;
 
     unsafe fn static_write_buffer(&mut self) -> (*mut <Self as StaticWriteBuffer>::Word, usize) {
         self.write_buffer()
@@ -366,11 +374,111 @@ mod tests {
 
         let (ptr, size_local) = api_read(&local_buf);
         assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-        assert!(size_local == SIZE);
+        assert_eq!(size_local, SIZE);
 
         let (ptr, size_static) = static_api_read(&BUF);
         assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-        assert!(size_static == SIZE);
+        assert_eq!(size_static, SIZE);
+    }
+
+    #[test]
+    fn unsafe_static_write() {
+        struct NewType<'a> {
+            inner: &'a mut [u8],
+        }
+
+        unsafe impl<'a> WriteBuffer for NewType<'a> {
+            type Word = u8;
+
+            unsafe fn write_buffer(&mut self) -> (*mut Self::Word, usize) {
+                self.inner.write_buffer()
+            }
+        }
+
+        unsafe impl<'a> StaticWriteBuffer for NewType<'a> {
+            type Word = u8;
+
+            unsafe fn static_write_buffer(
+                &mut self,
+            ) -> (*mut <Self as StaticWriteBuffer>::Word, usize) {
+                self.write_buffer()
+            }
+        }
+
+        const SIZE: usize = 128;
+        let mut not_static = [0_u8; SIZE];
+
+        {
+            let local_buf = NewType {
+                inner: &mut not_static,
+            };
+
+            let (ptr, size_local) = api_write(local_buf);
+            assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
+            assert_eq!(size_local, SIZE);
+        }
+
+        {
+            let local_buf = NewType {
+                inner: &mut not_static,
+            };
+
+            // If this function were updated, the test might fail. But right now the invariants are
+            // the same as the non-static alternative, so it is worth-while testing.
+            let (ptr, size_static) = static_api_write(local_buf);
+            assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
+            assert_eq!(size_static, SIZE);
+        }
+    }
+
+    #[test]
+    fn unsafe_static_read() {
+        struct NewType<'a> {
+            inner: &'a mut [u8],
+        }
+
+        unsafe impl<'a> ReadBuffer for NewType<'a> {
+            type Word = u8;
+
+            unsafe fn read_buffer(&self) -> (*const Self::Word, usize) {
+                self.inner.read_buffer()
+            }
+        }
+
+        unsafe impl<'a> StaticReadBuffer for NewType<'a> {
+            type Word = u8;
+
+            unsafe fn static_read_buffer(
+                &self,
+            ) -> (*const <Self as StaticReadBuffer>::Word, usize) {
+                self.read_buffer()
+            }
+        }
+
+        const SIZE: usize = 128;
+
+        let mut not_static = [0_u8; SIZE];
+        {
+            let local_buf = NewType {
+                inner: &mut not_static,
+            };
+
+            let (ptr, size_local) = api_read(local_buf);
+            assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
+            assert_eq!(size_local, SIZE);
+        }
+
+        {
+            let local_buf = NewType {
+                inner: &mut not_static,
+            };
+
+            // If this function were updated, the test might fail. But right now the invariants are
+            // the same as the non-static alternative, so it is worth-while testing.
+            let (ptr, size_local) = static_api_read(local_buf);
+            assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
+            assert_eq!(size_local, SIZE);
+        }
     }
 
     #[test]
@@ -381,10 +489,10 @@ mod tests {
 
         let (ptr, size_local) = api_write(&mut local_buf);
         assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-        assert!(size_local == SIZE);
+        assert_eq!(size_local, SIZE);
 
         let (ptr, size_static) = static_api_write(unsafe { &mut BUF });
         assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-        assert!(size_static == SIZE);
+        assert_eq!(size_static, SIZE);
     }
 }
