@@ -1,6 +1,6 @@
 //! Traits to aid the correct use of buffers in DMA abstractions.
 //!
-//! This library provides the `ReadBuffer` and `WriteBuffer` unsafe traits to be used as bounds to
+//! This library provides the [ReadBuffer] and [WriteBuffer] unsafe traits to be used as bounds to
 //! buffers types used in DMA operations.
 //!
 //! There are some subtleties to the extent of the guarantees provided by these traits, all of these
@@ -11,27 +11,19 @@
 //! `Self` (with the exception of [`write_buffer`](trait.WriteBuffer.html#tymethod.write_buffer) in
 //! our case). This is to allow types like `Vec`, this restriction doesn't apply to `Self::Target`.
 //!
-//! * The location is only guaranteed to be stable for the duration of `Self`, that means that
-//! `Self` doesn't need to be `'static`, i.e. `&'a [u8]` is valid. This can be a bit subtle for
-//! most DMA abstractions, because they almost always require `'static`, given the intrinsics of
-//! `mem::forget` and the Rust language itself. Those APIs must also bound to `'static` and not only
-//! `WriteBuffer`/`ReadBuffer`. The reason we don't require `'static` in the traits themselves is
-//! because it would block implementations that can deal with stack allocated buffers, like APIs
-//! that use closures to prevent memory corruption.
+//! * [ReadBuffer] and [WriteBuffer] guarantee a stable location for as long as the DMA transfer
+//! occurs. Given the intrinsics of `mem::forget` and the Rust language itself, a
+//! 'static lifetime is usually required.
 //!
-//! If your API also needs a `'static` bound, prefer the use of [StaticReadBuffer] and
-//! [StaticWriteBuffer]. They are a stricter version that requires a `'static` lifetime invariant,
-//! while also allowing end users to __unsafely__ bypass it.
-//!
-//! If you are not sure which version of the traits you should be bounding to in your DMA
-//! implementations, prefer the "Static" versions, they are sound for a bigger number of techniques
-//! that deal with DMA.
+//! * The end-user can add their custom implementations of [ReadBuffer] and [WriteBuffer] which do
+//! not need to be 'static. This can be useful when DMA transfers use memory on the stack.
+//! Implementing either trait is unsafe, and end-user will need to verify that invariants are
+//! upheld each time the trait is used. This usually means `mem::forget` is not called on the struct
+//! representing the DMA transfer before the DMA transfer is finished. Since the invariants must be
+//! upheld locally, any implemented traits should not be exported.
 //!
 //! The above list is not exhaustive, for a complete set of requirements and guarantees, the
 //! documentation of each trait and method should be analyzed.
-//!
-//! [StaticReadBuffer]: trait.StaticReadBuffer.html
-//! [StaticWriteBuffer]: trait.StaticWriteBuffer.html
 #![no_std]
 
 use core::{
@@ -51,7 +43,7 @@ use stable_deref_trait::StableDeref;
 ///   - `read_buffer` must always return the same value, if called multiple
 ///     times.
 ///   - The memory specified by the pointer and size returned by `read_buffer`
-///     must not be freed as long as `self` is not dropped.
+///     must not be freed during the transfer it is used in as long as `self` is not dropped.
 pub unsafe trait ReadBuffer {
     type Word;
 
@@ -82,7 +74,7 @@ pub unsafe trait ReadBuffer {
 ///   - `write_buffer` must always return the same value, if called multiple
 ///     times.
 ///   - The memory specified by the pointer and size returned by `write_buffer`
-///     must not be freed as long as `self` is not dropped.
+///     must not be freed during the transfer as long as `self` is not dropped.
 pub unsafe trait WriteBuffer {
     type Word;
 
@@ -279,22 +271,19 @@ mod tests {
     fn read_api() {
         const SIZE: usize = 128;
         static BUF: [u8; SIZE] = [0u8; SIZE];
-        let local_buf = [0u8; SIZE];
 
         let (ptr, size_local) = api_read(&BUF);
         assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-        assert!(size_local == SIZE);
-
+        assert_eq!(size_local, SIZE);
     }
 
     #[test]
     fn write_api() {
         const SIZE: usize = 128;
         static mut BUF: [u8; SIZE] = [0u8; SIZE];
-        let mut local_buf = [0u8; SIZE];
 
         let (ptr, size_local) = api_write(unsafe { &mut BUF });
         assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-        assert!(size_local == SIZE);
+        assert_eq!(size_local, SIZE);
     }
 }
