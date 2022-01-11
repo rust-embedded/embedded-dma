@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-**Breaking:**
-- `StaticReadBuffer` and `StaticWriteBuffer` no longer exist. Instead use `ReadBuffer`, `WriteBuffer`.
+### Changed
+- [breaking change] `StaticReadBuffer` and `StaticWriteBuffer` no longer exist. Instead use `ReadBuffer`, `WriteBuffer`.
 
 ### Added
 - Replace less strict `ReadBuffer` and `WriteBuffer` definitions with
