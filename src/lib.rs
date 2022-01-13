@@ -15,13 +15,6 @@
 //! occurs. Given the intrinsics of `mem::forget` and the Rust language itself, a
 //! 'static lifetime is usually required.
 //!
-//! * The end-user can add their custom implementations of [ReadBuffer] and [WriteBuffer] which do
-//! not need to be 'static. This can be useful when DMA transfers use memory on the stack.
-//! Implementing either trait is unsafe, and end-user will need to verify that invariants are
-//! upheld each time the trait is used. This usually means `mem::forget` is not called on the struct
-//! representing the DMA transfer before the DMA transfer is finished. Since the invariants must be
-//! upheld locally, any implemented traits should not be exported.
-//!
 //! The above list is not exhaustive, for a complete set of requirements and guarantees, the
 //! documentation of each trait and method should be analyzed.
 #![no_std]
