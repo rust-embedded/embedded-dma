@@ -145,7 +145,7 @@ unsafe impl Word for i64 {}
 /// # Safety
 ///
 /// - `as_read_buffer` must adhere to the safety requirements
-///   documented for `ReadBuffer::read_buffer`.
+///   documented for [`ReadBuffer::read_buffer`].
 pub unsafe trait ReadTarget {
     type Word: Word;
 
