@@ -164,7 +164,7 @@ pub unsafe trait ReadTarget {
 /// # Safety
 ///
 /// - `as_write_buffer` must adhere to the safety requirements
-///   documented for `WriteBuffer::write_buffer`.
+///   documented for [`WriteBuffer::write_buffer`].
 pub unsafe trait WriteTarget {
     type Word: Word;
 
