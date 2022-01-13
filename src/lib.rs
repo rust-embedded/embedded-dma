@@ -1,6 +1,6 @@
 //! Traits to aid the correct use of buffers in DMA abstractions.
 //!
-//! This library provides the [ReadBuffer] and [WriteBuffer] unsafe traits to be used as bounds to
+//! This library provides the [`ReadBuffer`] and [`WriteBuffer`] unsafe traits to be used as bounds to
 //! buffers types used in DMA operations.
 //!
 //! There are some subtleties to the extent of the guarantees provided by these traits, all of these
