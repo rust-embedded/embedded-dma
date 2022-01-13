@@ -11,7 +11,7 @@
 //! `Self` (with the exception of [`write_buffer`](trait.WriteBuffer.html#tymethod.write_buffer) in
 //! our case). This is to allow types like `Vec`, this restriction doesn't apply to `Self::Target`.
 //!
-//! * [ReadBuffer] and [WriteBuffer] guarantee a stable location for as long as the DMA transfer
+//! * [`ReadBuffer`] and [`WriteBuffer`] guarantee a stable location for as long as the DMA transfer
 //! occurs. Given the intrinsics of `mem::forget` and the Rust language itself, a
 //! 'static lifetime is usually required.
 //!
