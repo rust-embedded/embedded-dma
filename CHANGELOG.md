@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+### Changed
+- [breaking change] `StaticReadBuffer` and `StaticWriteBuffer` no longer exist. Instead use `ReadBuffer`, `WriteBuffer`.
+
+### Added
+- Replace less strict `ReadBuffer` and `WriteBuffer` definitions with
+  those of `StaticReadBuffer` and `StaticWriteBuffer`. This removes the separate static
+  traits.
+
 ## [v0.1.2] - 2020-09-30
 
 ### Added
