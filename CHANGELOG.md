@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [v0.2.0] - 2021-02-01
+
 ### Changed
 - [breaking change] `StaticReadBuffer` and `StaticWriteBuffer` no longer exist. Instead use `ReadBuffer`, `WriteBuffer`.
 
@@ -29,6 +31,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 Initial release
 
-[unreleased]: https://github.com/rust-embedded/embedded-dma/compare/v0.1.2...HEAD
+[unreleased]: https://github.com/rust-embedded/embedded-dma/compare/v0.2.0...HEAD
+[v0.2.0]: https://github.com/rust-embedded/embedded-dma/compare/v0.1.2...v0.2.0
 [v0.1.2]: https://github.com/rust-embedded/embedded-dma/compare/v0.1.1...v0.1.2
 [v0.1.1]: https://github.com/rust-embedded/embedded-dma/compare/v0.1.0...v0.1.1
