@@ -1,80 +1,124 @@
+pub use sealed::{ReadBufferExt, WriteBufferExt};
+
 use crate::slice::sealed::BufferRange;
 use crate::{ReadBuffer, WriteBuffer};
-use core::ops::Range;
-pub use sealed::BufferExt;
 
 mod sealed {
-    use crate::slice::BufferSlice;
     use core::ops::{Range, RangeFrom, RangeFull, RangeTo};
 
-    /// An extension trait used for [crate::ReadBuffer] and [crate::WriteBuffer]
-    pub trait BufferExt: Sized {
-        /// Turn the given [crate::ReadBuffer] or [crate::WriteBuffer] into a BufferSlice.
-        /// This method has no use if the struct does not implement one of the listed traits.
-        fn into_buffer_slice<B: BufferRange>(self, range: B) -> BufferSlice<Self> {
-            BufferSlice::new(self, range)
+    use crate::slice::{ReadBufferSlice, WriteBufferSlice};
+    use crate::{ReadBuffer, WriteBuffer};
+
+    /// An extension trait used for [crate::ReadBuffer]
+    pub trait ReadBufferExt: Sized + ReadBuffer {
+        /// Turn the given [crate::ReadBuffer] into a [ReadBufferSlice].
+        fn into_read_buffer_slice<B: BufferRange>(self, range: B) -> Option<ReadBufferSlice<Self>> {
+            ReadBufferSlice::new(self, range)
+        }
+    }
+
+    /// An extension trait used for [crate::WriteBuffer]
+    pub trait WriteBufferExt: Sized + WriteBuffer {
+        /// Turn the given [crate::WriteBuffer] into a [WriteBufferSlice].
+        fn into_write_buffer_slice<B: BufferRange>(
+            self,
+            range: B,
+        ) -> Option<WriteBufferSlice<Self>> {
+            WriteBufferSlice::new(self, range)
         }
     }
 
     pub trait BufferRange {
-        fn into_range(self) -> Range<usize>;
+        fn into_range(self, len: usize) -> Option<Range<usize>>;
     }
 
     impl BufferRange for Range<usize> {
-        fn into_range(self) -> Range<usize> {
-            if self.start > self.end {
-                Range { start: 0, end: 0 }
+        fn into_range(self, len: usize) -> Option<Range<usize>> {
+            if self.start > self.end || self.end > len {
+                // degenerate range
+                None
             } else {
-                self
+                Some(self)
             }
         }
     }
 
     impl BufferRange for RangeTo<usize> {
-        fn into_range(self) -> Range<usize> {
-            Range {
-                start: 0,
-                end: self.end,
+        fn into_range(self, len: usize) -> Option<Range<usize>> {
+            if self.end > len {
+                None
+            } else {
+                Some(Range {
+                    start: 0,
+                    end: self.end,
+                })
             }
         }
     }
 
     impl BufferRange for RangeFull {
-        fn into_range(self) -> Range<usize> {
-            Range {
-                start: 0,
-
-                // this uses deprecated syntax to allow for a smaller MSRV
-                end: core::usize::MAX,
-            }
+        fn into_range(self, len: usize) -> Option<Range<usize>> {
+            Some(Range { start: 0, end: len })
         }
     }
 
     impl BufferRange for RangeFrom<usize> {
-        fn into_range(self) -> Range<usize> {
-            Range {
-                start: self.start,
-
-                // this uses deprecated syntax to allow for a smaller MSRV
-                end: core::usize::MAX,
+        fn into_range(self, len: usize) -> Option<Range<usize>> {
+            if self.start > len {
+                None
+            } else {
+                Some(Range {
+                    start: self.start,
+                    end: len,
+                })
             }
         }
     }
 }
 
-impl<T: Sized> BufferExt for T {}
+impl<T: ReadBuffer + Sized> ReadBufferExt for T {}
+impl<T: WriteBuffer + Sized> WriteBufferExt for T {}
 
-/// A [BufferSlice] is a slice which wraps either a [ReadBuffer] or a [WriteBuffer]
-/// - When it wraps a [ReadBuffer], it implements [ReadBuffer]
-/// - When it wraps a [WriteBuffer], it implements [WriteBuffer]
-/// - To prevent panics and to enforce safety, the given range is coerced between `[0, len)`, where
-/// `len` is the length of the original buffer
+/// A [ReadBufferSlice] is a slice which wraps a [ReadBuffer] and implements [ReadBuffer]
+/// - See [WriteBufferSlice] for a similar use-case.
+pub struct ReadBufferSlice<T: ReadBuffer> {
+    ptr: *const T::Word,
+    len: usize,
+    inner: T,
+}
+
+impl<T: ReadBuffer> ReadBufferSlice<T> {
+    /// Create a new [BufferSlice]
+    fn new(inner: T, range: impl BufferRange) -> Option<Self> {
+        // all invariants are satisfied—we are consuming inner—we know no
+        // &mut self methods can be called until
+
+        let (ptr, len) = unsafe { inner.read_buffer() };
+
+        let into = range.into_range(len);
+
+        into.map(|range| unsafe {
+            Self {
+                ptr: ptr.add(range.start),
+                len: range.len(),
+                inner,
+            }
+        })
+    }
+
+    /// Consume the [ReadBufferSlice] and return the wrapped value
+    pub fn inner(self) -> T {
+        self.inner
+    }
+}
+
+/// A [WriteBufferSlice] is a slice which wraps a [WriteBuffer] and implements [WriteBuffer]
 /// # Use Case
 /// Many HALs use the length of a {Read,Write}Buffer to configure DMA Transfers. However, changing
 /// the length of the buffer can be complicated. For instance consider the case where we want to
 /// change the length of a slice for a DMA transfer:
 /// ```
-/// use embedded_dma::{BufferExt, WriteBuffer};
+/// use embedded_dma::{ReadBufferExt, WriteBuffer, WriteBufferExt};
 /// struct DmaTransfer<Buf> {
 ///     buf: Buf,
 /// }
@@ -120,7 +164,7 @@ impl<T: Sized> BufferExt for T {}
 ///
 /// /// This function is good—we can get the whole slice back!
 /// fn dma_transfer(buffer: &'static mut [u8], length: usize) -> &'static mut [u8] {
-///     let buffer_slice = buffer.into_buffer_slice(..length);
+///     let buffer_slice = buffer.into_write_buffer_slice(..length).unwrap();
 ///     let transfer = DmaTransfer::start(buffer_slice);
 ///     while !transfer.is_done() {}
 ///     let buffer_slice = transfer.free();
@@ -140,53 +184,45 @@ impl<T: Sized> BufferExt for T {}
 ///
 /// assert_eq!(returned_buffer.len(), SIZE);
 /// ```
-pub struct BufferSlice<T> {
+pub struct WriteBufferSlice<T: WriteBuffer> {
+    ptr: *mut T::Word,
+    len: usize,
     inner: T,
-    range: Range<usize>,
 }
 
-impl<T> BufferSlice<T> {
+impl<T: WriteBuffer> WriteBufferSlice<T> {
     /// Create a new [BufferSlice]
-    fn new(inner: T, range: impl BufferRange) -> Self {
-        // The range must be span a non-negative length for internal logic to work
-        Self {
-            inner,
-            range: range.into_range(),
-        }
+    fn new(mut inner: T, range: impl BufferRange) -> Option<Self> {
+        let (ptr, len) = unsafe { inner.write_buffer() };
+
+        let into = range.into_range(len);
+
+        into.map(|range| unsafe {
+            Self {
+                ptr: ptr.add(range.start),
+                len: range.len(),
+                inner,
+            }
+        })
     }
 
-    /// Consume the [BufferSlice] and return the wrapped value
+    /// Consume the [WriteBufferSlice] and return the wrapped value
     pub fn inner(self) -> T {
         self.inner
     }
-
-    /// Coerce the given range into [0..len)
-    fn coerced_range(&self, len: usize) -> Range<usize> {
-        let start = self.range.start.min(len);
-        let end = self.range.end.min(len);
-        Range { start, end }
-    }
 }
 
-unsafe impl<T: ReadBuffer> ReadBuffer for BufferSlice<T> {
+unsafe impl<T: ReadBuffer> ReadBuffer for ReadBufferSlice<T> {
     type Word = T::Word;
 
     unsafe fn read_buffer(&self) -> (*const Self::Word, usize) {
-        let (ptr, len) = self.inner.read_buffer();
-
-        let range = self.coerced_range(len);
-
-        (ptr.add(range.start), range.len())
+        (self.ptr, self.len)
     }
 }
 
-unsafe impl<T: WriteBuffer> WriteBuffer for BufferSlice<T> {
+unsafe impl<T: WriteBuffer> WriteBuffer for WriteBufferSlice<T> {
     type Word = T::Word;
     unsafe fn write_buffer(&mut self) -> (*mut Self::Word, usize) {
-        let (ptr, len) = self.inner.write_buffer();
-
-        let range = self.coerced_range(len);
-
-        (ptr.add(range.start), range.len())
+        (self.ptr, self.len)
     }
 }

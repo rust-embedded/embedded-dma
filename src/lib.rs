@@ -26,7 +26,7 @@ use core::{
     ops::{Deref, DerefMut},
 };
 
-pub use slice::BufferExt;
+pub use slice::{ReadBufferExt, ReadBufferSlice, WriteBufferExt, WriteBufferSlice};
 
 use stable_deref_trait::StableDeref;
 
@@ -204,7 +204,6 @@ unsafe impl<T: WriteTarget> WriteTarget for MaybeUninit<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::slice::BufferExt;
     use core::any::Any;
 
     fn api_read<W, B>(buffer: B) -> (*const W, usize)
@@ -236,122 +235,118 @@ mod tests {
         const SIZE: usize = 128;
         static BUF: [u8; SIZE] = [0u8; SIZE];
         {
-            let buf_slice = (&BUF).into_buffer_slice(..123);
+            let buf_slice = (&BUF).into_read_buffer_slice(..123).unwrap();
             let (ptr, size_local) = api_read(buf_slice);
             assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
             assert_eq!(size_local, 123);
         }
 
         {
-            let buf_slice = (&BUF).into_buffer_slice(5..123);
+            let buf_slice = (&BUF).into_read_buffer_slice(5..123).unwrap();
             let (ptr, size_local) = api_read(buf_slice);
             assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
             assert_eq!(size_local, 123 - 5);
         }
 
         {
-            let buf_slice = (&BUF).into_buffer_slice(5..);
+            let buf_slice = (&BUF).into_read_buffer_slice(5..).unwrap();
             let (ptr, size_local) = api_read(buf_slice);
             assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
             assert_eq!(size_local, SIZE - 5);
         }
 
         {
-            let buf_slice = (&BUF).into_buffer_slice(..);
+            let buf_slice = (&BUF).into_read_buffer_slice(..).unwrap();
             let (ptr, size_local) = api_read(buf_slice);
             assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
             assert_eq!(size_local, SIZE);
         }
 
         {
-            let buf_slice = (&BUF).into_buffer_slice(0..SIZE);
+            let buf_slice = (&BUF).into_read_buffer_slice(0..SIZE).unwrap();
             let (ptr, size_local) = api_read(buf_slice);
             assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
             assert_eq!(size_local, SIZE);
         }
 
         {
-            let buf_slice = (&BUF).into_buffer_slice(0..9999999999);
-            let (ptr, size_local) = api_read(buf_slice);
-            assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-            assert_eq!(size_local, SIZE);
+            let buf_slice = (&BUF).into_read_buffer_slice(0..9999999999);
+            assert!(buf_slice.is_none());
         }
 
         {
-            let buf_slice = (&BUF).into_buffer_slice(123213..9999999999);
-            let (ptr, size_local) = api_read(buf_slice);
-            assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-            assert_eq!(size_local, 0);
+            let buf_slice = (&BUF).into_read_buffer_slice(123213..9999999999);
+            assert!(buf_slice.is_none());
         }
 
         {
             #[allow(clippy::reversed_empty_ranges)]
-            let buf_slice = (&BUF).into_buffer_slice(123..2);
-            let (ptr, size_local) = api_read(buf_slice);
-            assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-            assert_eq!(size_local, 0);
+            let buf_slice = (&BUF).into_read_buffer_slice(123..2);
+            assert!(buf_slice.is_none());
         }
     }
 
     #[test]
     fn write_api_slice() {
+        pub use slice::WriteBufferExt;
+
         const SIZE: usize = 128;
         static mut BUF: [u8; SIZE] = [0u8; SIZE];
         {
-            let buf_slice = (unsafe { &mut BUF }).into_buffer_slice(..123);
+            let buf_slice = (unsafe { &mut BUF })
+                .into_write_buffer_slice(..123)
+                .unwrap();
             let (ptr, size_local) = api_write(buf_slice);
             assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
             assert_eq!(size_local, 123);
         }
 
         {
-            let buf_slice = (unsafe { &mut BUF }).into_buffer_slice(5..123);
+            let buf_slice = (unsafe { &mut BUF })
+                .into_write_buffer_slice(5..123)
+                .unwrap();
             let (ptr, size_local) = api_write(buf_slice);
             assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
             assert_eq!(size_local, 123 - 5);
         }
 
         {
-            let buf_slice = (unsafe { &mut BUF }).into_buffer_slice(5..);
+            let buf_slice = (unsafe { &mut BUF }).into_write_buffer_slice(5..).unwrap();
             let (ptr, size_local) = api_write(buf_slice);
             assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
             assert_eq!(size_local, SIZE - 5);
         }
 
         {
-            let buf_slice = (unsafe { &mut BUF }).into_buffer_slice(..);
+            let buf_slice = (unsafe { &mut BUF }).into_write_buffer_slice(..).unwrap();
             let (ptr, size_local) = api_write(buf_slice);
             assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
             assert_eq!(size_local, SIZE);
         }
 
         {
-            let buf_slice = (unsafe { &mut BUF }).into_buffer_slice(0..SIZE);
+            let buf_slice = (unsafe { &mut BUF })
+                .into_write_buffer_slice(0..SIZE)
+                .unwrap();
             let (ptr, size_local) = api_write(buf_slice);
             assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
             assert_eq!(size_local, SIZE);
         }
 
         {
-            let buf_slice = (unsafe { &mut BUF }).into_buffer_slice(0..9999999999);
-            let (ptr, size_local) = api_write(buf_slice);
-            assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-            assert_eq!(size_local, SIZE);
+            let buf_slice = (unsafe { &mut BUF }).into_write_buffer_slice(0..9999999999);
+            assert!(buf_slice.is_none());
         }
 
         {
-            let buf_slice = (unsafe { &mut BUF }).into_buffer_slice(123213..9999999999);
-            let (ptr, size_local) = api_write(buf_slice);
-            assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-            assert_eq!(size_local, 0);
+            let buf_slice = (unsafe { &mut BUF }).into_write_buffer_slice(123213..9999999999);
+            assert!(buf_slice.is_none());
         }
 
         {
             #[allow(clippy::reversed_empty_ranges)]
-            let buf_slice = (unsafe { &mut BUF }).into_buffer_slice(123..2);
-            let (ptr, size_local) = api_write(buf_slice);
-            assert!(unsafe { (&*ptr as &dyn Any).is::<u8>() });
-            assert_eq!(size_local, 0);
+            let buf_slice = (unsafe { &mut BUF }).into_write_buffer_slice(123..2);
+            assert!(buf_slice.is_none())
         }
     }
 
